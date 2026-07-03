@@ -15,12 +15,15 @@ import (
 )
 
 type Controller struct {
-	svc     *service.Service
+	svc     service.ServiceInterface
 	jwtUtil *middleware.JWTUtil
 }
 
-func NewController(svc *service.Service, jwtUtil *middleware.JWTUtil) *Controller {
-	return &Controller{svc: svc, jwtUtil: jwtUtil}
+func NewController(svc service.ServiceInterface, jwtUtil *middleware.JWTUtil) *Controller {
+	return &Controller{
+		svc:     svc,
+		jwtUtil: jwtUtil,
+	}
 }
 
 func (c *Controller) RegisterUser(ctx *gin.Context) {
@@ -139,6 +142,7 @@ func (c *Controller) CreateMoviesTicket(ctx *gin.Context) {
 
 	utils.SuccessResponse(ctx, http.StatusOK, ticket)
 }
+
 func (c *Controller) GetAllTickets(ctx *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -274,6 +278,7 @@ func (c *Controller) GetBookings(ctx *gin.Context) {
 			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
 		}
 	}()
+
 	claims := middleware.GetClaims(ctx)
 	if claims == nil {
 		utils.ValidationError(ctx, fmt.Errorf("authorization required"))
@@ -282,22 +287,12 @@ func (c *Controller) GetBookings(ctx *gin.Context) {
 
 	bookings, err := c.svc.GetBookingsByUserID(claims.UserID)
 	if err != nil {
-		logrus.Info("Get bookings failed for user %d: %v", claims.UserID, err)
+		logrus.Infof("Get bookings failed for user %d: %v", claims.UserID, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
-	var response []dto.BookingResponse
 
-	for _, booking := range bookings {
-		response = append(response, dto.BookingResponse{
-			UserID:     booking.UserID,
-			TicketID:   booking.TicketID,
-			Quantity:   booking.Quantity,
-			TotalPrice: booking.TotalPrice,
-		})
-	}
-
-	utils.SuccessResponse(ctx, http.StatusOK, response)
+	utils.SuccessResponse(ctx, http.StatusOK, bookings)
 }
 
 func (c *Controller) GetUserByID(ctx *gin.Context) {

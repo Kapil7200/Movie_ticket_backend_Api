@@ -1,6 +1,9 @@
 package repository
 
-import "movie_ticket/model"
+import (
+	"movie_ticket/dto"
+	"movie_ticket/model"
+)
 
 type Repository interface {
 	CreateUser(user *model.User) error
@@ -11,7 +14,8 @@ type Repository interface {
 	GetAllTickets() ([]model.TicketMaster, error)
 	UpdateTicket(ticket *model.TicketMaster) error
 	BookTicket(ticketID, userID uint, quantity int) error
-	GetBookingsByUserID(userID uint) ([]model.Booking, error)
+	GetBookingsByUserID(userID uint) ([]dto.BookingResponse, error)
 	GetUserBookings(userID uint) ([]model.Booking, error)
 	ListUsers() ([]model.User, error)
+
 }

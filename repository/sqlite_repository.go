@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 
+	"movie_ticket/dto"
 	"movie_ticket/model"
 
 	"github.com/sirupsen/logrus"
@@ -163,18 +164,32 @@ func (r *GORMRepository) BookTicket(ticketID, userID uint, quantity int) error {
 	return nil
 }
 
-func (r *GORMRepository) GetBookingsByUserID(userID uint) ([]model.Booking, error) {
-	var bookings []model.Booking
-	if err := r.db.Preload("Ticket").Where("user_id = ?", userID).Find(&bookings).Error; err != nil {
-		return nil, err
-	}
-	return bookings, nil
-}
 
 func (r *GORMRepository) GetUserBookings(userID uint) ([]model.Booking, error) {
 	var bookings []model.Booking
 	if err := r.db.Preload("Ticket").Where("user_id = ?", userID).Find(&bookings).Error; err != nil {
 		logrus.Infof("GetUserBookings failed. UserID=%d Error=%v", userID, err)
 	}
+	return bookings, nil
+}
+func (r *GORMRepository) GetBookingsByUserID(userID uint) ([]dto.BookingResponse, error) {
+	var bookings []dto.BookingResponse
+
+	err := r.db.
+		Table("bookings").
+		Select(`
+			bookings.user_id,
+			bookings.ticket_id,
+			bookings.quantity,
+			bookings.total_price
+		`).
+		Joins("JOIN tickets ON tickets.id = bookings.ticket_id").
+		Where("bookings.user_id = ?", userID).
+		Scan(&bookings).Error
+	if err != nil {
+		logrus.Infof("GetBookingsByUserID failed. UserID=%d Error=%v", userID, err)
+		return nil, err
+	}
+
 	return bookings, nil
 }

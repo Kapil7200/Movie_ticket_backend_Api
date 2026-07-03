@@ -10,6 +10,21 @@ import (
 	"gorm.io/gorm"
 )
 
+type ServiceInterface interface {
+	RegisterUser(userName, password, email string) (*model.User, error)
+	Authenticate(userName, password string) (*model.User, error)
+	ListUsers() ([]model.User, error)
+
+	CreateMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error)
+	GetAllTickets() ([]model.TicketMaster, error)
+	GetTicketByID(id uint) (*model.TicketMaster, error)
+	UpdateTicket(id uint, req dto.TicketRequest) error
+
+	BookTicket(ticketID, userID uint, quantity int) error
+
+	GetUserByID(id uint) (*model.User, error)
+	GetBookingsByUserID(userID uint) ([]dto.BookingResponse, error)
+}
 type Service struct {
 	repo repository.Repository
 }
@@ -128,7 +143,7 @@ func (s *Service) GetUserByID(id uint) (*model.User, error) {
 	return user, nil
 }
 
-func (s *Service) GetBookingsByUserID(userID uint) ([]model.Booking, error) {
+func (s *Service) GetBookingsByUserID(userID uint) ([]dto.BookingResponse, error) {
 	bookings, err := s.repo.GetBookingsByUserID(userID)
 	if err != nil {
 		return nil, err
