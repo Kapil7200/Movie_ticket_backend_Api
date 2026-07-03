@@ -15,7 +15,7 @@ type ServiceInterface interface {
 	Authenticate(userName, password string) (*model.User, error)
 	ListUsers() ([]model.User, error)
 
-	CreateMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error)
+	StoreMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error)
 	GetAllTickets() ([]model.TicketMaster, error)
 	GetTicketByID(id uint) (*model.TicketMaster, error)
 	UpdateTicket(id uint, req dto.TicketRequest) error
@@ -76,7 +76,7 @@ func (s *Service) ListUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func (s *Service) CreateMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error) {
+func (s *Service) StoreMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error) {
 
 	ticket := &model.TicketMaster{
 		MovieName:       req.MovieName,
@@ -85,8 +85,8 @@ func (s *Service) CreateMoviesTicket(req dto.TicketRequest) (*model.TicketMaster
 		PricePerTicket:  req.PricePerTicket,
 	}
 
-	if err := s.repo.CreateMoviesTicket(ticket); err != nil {
-		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
+	if err := s.repo.StoreMoviesTicket(ticket); err != nil {
+		logrus.Info("StoreMoviesTicket failed. Error=%v", err)
 		return nil, err
 	}
 

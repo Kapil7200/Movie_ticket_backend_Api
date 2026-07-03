@@ -58,17 +58,17 @@ func (r *GORMRepository) ListUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func (r *GORMRepository) CreateMoviesTicket(ticket *model.TicketMaster) error {
+func (r *GORMRepository) StoreMoviesTicket(ticket *model.TicketMaster) error {
 
 	if err := r.db.Create(ticket).Error; err != nil {
 
-		logrus.Infof("CreateMoviesTicket failed. TicketID=%d Movie=%s Error=%v",
+		logrus.Infof("StoreMoviesTicket failed. TicketID=%d Movie=%s Error=%v",
 			ticket.ID, ticket.MovieName, err)
 
 		return err
 	}
 
-	logrus.Infof("CreateMoviesTicket successful. TicketID=%d Movie=%s",
+	logrus.Infof("StoreMoviesTicket successful. TicketID=%d Movie=%s",
 		ticket.ID, ticket.MovieName)
 
 	return nil

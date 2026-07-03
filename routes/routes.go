@@ -17,7 +17,7 @@ func RegisterRoutes(router *gin.Engine, controller *controllers.Controller, auth
 		//authGroup.GET("/users-list/:id", controller.GetUserByID)
 		authGroup.GET("/users-listing", controller.ListUsers)
 		authGroup.GET("/tickets-listing", controller.GetAllTickets)
-		authGroup.POST("/create-tickets", controller.CreateMoviesTicket)
+		authGroup.POST("/create-tickets", controller.StoreMoviesTicket)
 		authGroup.GET("/tickets-list/:id", controller.GetTicketByID)
 		authGroup.PUT("/update/ticket/:id", controller.UpdateTicket)
 		authGroup.POST("/book-ticket/:id/book", controller.BookTicket)

@@ -118,24 +118,24 @@ func (c *Controller) ListUsers(ctx *gin.Context) {
 	}
 	utils.SuccessResponse(ctx, http.StatusOK, users)
 }
-func (c *Controller) CreateMoviesTicket(ctx *gin.Context) {
+func (c *Controller) StoreMoviesTicket(ctx *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
-			logrus.Info("CreateMoviesTicket@panicInfo:", r)
+			logrus.Info("StoreMoviesTicket@panicInfo:", r)
 			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
 		}
 	}()
 	var req dto.TicketRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
+		logrus.Info("StoreMoviesTicket failed. Error=%v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
 
-	ticket, err := c.svc.CreateMoviesTicket(req)
+	ticket, err := c.svc.StoreMoviesTicket(req)
 	if err != nil {
-		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
+		logrus.Info("StoreMoviesTicket failed. Error=%v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
