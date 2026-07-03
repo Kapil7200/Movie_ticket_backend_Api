@@ -32,6 +32,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
+
+	defer func() {
+		sqlDB, err := db.DB()
+		if err != nil {
+			logrus.Errorf("Failed to get database instance: %v", err)
+			return
+		}
+
+		if err := sqlDB.Close(); err != nil {
+			logrus.Errorf("Failed to close database connection: %v", err)
+		} else {
+			logrus.Info("Database connection closed successfully")
+		}
+	}()
+
 	repo := repository.NewGORMRepository(db)
 	svc := service.NewService(repo)
 	jwtUtil := middleware.NewJWTUtil(cfg.JWTSecret)
@@ -42,10 +57,10 @@ func main() {
 
 	address := fmt.Sprintf(":%s", cfg.Port)
 
-	logrus.Info("Server started on %s", address)
+	logrus.Infof("Server started on %s", address)
 	fmt.Printf("Server running on %s\n", address)
 	if err := router.Run(address); err != nil {
-		logrus.Info("server failed: %v", err)
+		logrus.Errorf("Server failed: %v", err)
 	}
 
 }
