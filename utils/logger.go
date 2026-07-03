@@ -1,35 +1,46 @@
 package utils
 
 import (
-	"fmt"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
-var Logger *log.Logger
-
 func InitLogger() error {
-	// Create logs directory if it doesn't exist
-	if err := os.MkdirAll("logs", os.ModePerm); err != nil {
+
+	logDir := "logs"
+
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
 		return err
 	}
 
-	// Log file name based on current date
-	fileName := fmt.Sprintf("%s.log", time.Now().Format("2006-01-02"))
-	filePath := filepath.Join("logs", fileName)
+	fileName := time.Now().Format("2006-01-02") + ".log"
 
 	file, err := os.OpenFile(
-		filePath,
+		filepath.Join(logDir, fileName),
 		os.O_CREATE|os.O_APPEND|os.O_WRONLY,
-		0666,
+		0644,
 	)
 	if err != nil {
 		return err
 	}
 
-	Logger = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+	logrus.SetOutput(file)
+
+	logrus.SetFormatter(&logrus.JSONFormatter{
+		PrettyPrint:     true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+
+	logrus.SetReportCaller(true)
+
+	logrus.SetLevel(logrus.InfoLevel)
+
+	gin.DefaultWriter = io.MultiWriter(file)
 
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"movie_ticket/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -31,11 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("database connection failed: %v", err)
 	}
-
-	// if err := db.AutoMigrate(&model.User{}, &model.TicketMaster{}, &model.Booking{}); err != nil {
-	// 	log.Fatalf("database migration failed: %v", err)
-	// }
-
 	repo := repository.NewGORMRepository(db)
 	svc := service.NewService(repo)
 	jwtUtil := middleware.NewJWTUtil(cfg.JWTSecret)
@@ -46,10 +42,10 @@ func main() {
 
 	address := fmt.Sprintf(":%s", cfg.Port)
 
-	utils.Logger.Printf("Server started on %s", address)
+	logrus.Info("Server started on %s", address)
 	fmt.Printf("Server running on %s\n", address)
 	if err := router.Run(address); err != nil {
-		utils.Logger.Fatalf("server failed: %v", err)
-		log.Fatalf("server failed: %v", err)
+		logrus.Info("server failed: %v", err)
 	}
+
 }

@@ -7,12 +7,11 @@ import (
 
 	"movie_ticket/dto"
 	"movie_ticket/middleware"
-	"movie_ticket/model"
 	"movie_ticket/service"
 	"movie_ticket/utils"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+	"github.com/sirupsen/logrus"
 )
 
 type Controller struct {
@@ -24,7 +23,13 @@ func NewController(svc *service.Service, jwtUtil *middleware.JWTUtil) *Controlle
 	return &Controller{svc: svc, jwtUtil: jwtUtil}
 }
 
-func (c *Controller) Register(ctx *gin.Context) {
+func (c *Controller) RegisterUser(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("RegisterUser@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	var req dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		utils.ValidationError(ctx, err)
@@ -33,7 +38,7 @@ func (c *Controller) Register(ctx *gin.Context) {
 
 	user, err := c.svc.RegisterUser(req.UserName, req.Password, req.Email)
 	if err != nil {
-		utils.Logger.Printf("Register user failed: %v", err)
+		logrus.Info("Register user failed: %v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -46,16 +51,23 @@ func (c *Controller) Register(ctx *gin.Context) {
 	})
 }
 
-func (c *Controller) Login(ctx *gin.Context) {
+func (c *Controller) UserLogin(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("UserLogin@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	var req dto.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logrus.Info("Login failed. Error=%v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
 
 	user, err := c.svc.Authenticate(req.UserName, req.Password)
 	if err != nil {
-		utils.Logger.Printf("Login failed for user %s: %v", req.UserName, err)
+		logrus.Info("Login failed for user %s: %v", req.UserName, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -70,6 +82,12 @@ func (c *Controller) Login(ctx *gin.Context) {
 }
 
 func (c *Controller) VerifyToken(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("VerifyToken@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	claims := middleware.GetClaims(ctx)
 	if claims == nil {
 		utils.ValidationError(ctx, fmt.Errorf("authorization required"))
@@ -82,33 +100,55 @@ func (c *Controller) VerifyToken(ctx *gin.Context) {
 	})
 }
 
-func (c *Controller) CreateTicket(ctx *gin.Context) {
+func (c *Controller) ListUsers(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("ListUsers@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
+	users, err := c.svc.ListUsers()
+	if err != nil {
+		logrus.Info("List users failed: %v", err)
+		utils.ValidationError(ctx, err)
+		return
+	}
+	utils.SuccessResponse(ctx, http.StatusOK, users)
+}
+func (c *Controller) CreateMoviesTicket(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("CreateMoviesTicket@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	var req dto.TicketRequest
+
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Logger.Printf("CreateTicket failed. Error=%v", err)
+		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
 
-	ticket := &model.TicketMaster{
-		MovieName:       req.MovieName,
-		TotalTicket:     req.TotalTicket,
-		AvailableTicket: req.TotalTicket,
-		PricePerTicket:  req.PricePerTicket,
-	}
-
-	if err := c.svc.CreateTicket(ticket); err != nil {
-		utils.Logger.Printf("Create ticket failed: %v", err)
+	ticket, err := c.svc.CreateMoviesTicket(req)
+	if err != nil {
+		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
 
 	utils.SuccessResponse(ctx, http.StatusOK, ticket)
 }
-
 func (c *Controller) GetAllTickets(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("GetAllTickets@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	tickets, err := c.svc.GetAllTickets()
 	if err != nil {
+		logrus.Info("Get all tickets failed: %v", err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -116,6 +156,12 @@ func (c *Controller) GetAllTickets(ctx *gin.Context) {
 }
 
 func (c *Controller) GetTicketByID(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("GetTicketByID@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		utils.ValidationError(ctx, err)
@@ -124,7 +170,7 @@ func (c *Controller) GetTicketByID(ctx *gin.Context) {
 
 	ticket, err := c.svc.GetTicketByID(uint(id))
 	if err != nil {
-		utils.Logger.Printf("Get ticket by ID %d failed: %v", id, err)
+		logrus.Info("Get ticket by ID %d failed: %v", id, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -133,6 +179,12 @@ func (c *Controller) GetTicketByID(ctx *gin.Context) {
 }
 
 func (c *Controller) UpdateTicket(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("UpdateTicket@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		utils.ValidationError(ctx, err)
@@ -145,24 +197,15 @@ func (c *Controller) UpdateTicket(ctx *gin.Context) {
 		return
 	}
 
-	ticket := &model.TicketMaster{
-		Model:           gorm.Model{ID: uint(id)},
-		MovieName:       req.MovieName,
-		TotalTicket:     req.TotalTicket,
-		AvailableTicket: req.TotalTicket,
-		PricePerTicket:  req.PricePerTicket,
-	}
-
-	if err := c.svc.UpdateTicket(ticket); err != nil {
-		utils.Logger.Printf("Update ticket %d failed: %v", id, err)
+	if err := c.svc.UpdateTicket(uint(id), req); err != nil {
+		logrus.Info("Update ticket %d failed: %v", id, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
 
-	utils.Logger.Printf("Ticket updated successfully: %d", id)
 	updated, err := c.svc.GetTicketByID(uint(id))
 	if err != nil {
-		utils.Logger.Printf("Get updated ticket by ID %d failed: %v", id, err)
+		logrus.Info("Get updated ticket %d failed: %v", id, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -171,6 +214,12 @@ func (c *Controller) UpdateTicket(ctx *gin.Context) {
 }
 
 func (c *Controller) BookTicket(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("BookTicket@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		utils.ValidationError(ctx, err)
@@ -190,7 +239,7 @@ func (c *Controller) BookTicket(ctx *gin.Context) {
 	}
 
 	if err := c.svc.BookTicket(uint(id), claims.UserID, req.Quantity); err != nil {
-		utils.Logger.Printf("Booking failed. UserID=%d TicketID=%d Error=%v", claims.UserID, id, err)
+		logrus.Info("Booking failed. UserID=%d TicketID=%d Error=%v", claims.UserID, id, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -219,6 +268,12 @@ func (c *Controller) BookTicket(ctx *gin.Context) {
 }
 
 func (c *Controller) GetBookings(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("GetBookings@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	claims := middleware.GetClaims(ctx)
 	if claims == nil {
 		utils.ValidationError(ctx, fmt.Errorf("authorization required"))
@@ -227,7 +282,7 @@ func (c *Controller) GetBookings(ctx *gin.Context) {
 
 	bookings, err := c.svc.GetBookingsByUserID(claims.UserID)
 	if err != nil {
-		utils.Logger.Printf("Get bookings failed for user %d: %v", claims.UserID, err)
+		logrus.Info("Get bookings failed for user %d: %v", claims.UserID, err)
 		utils.ValidationError(ctx, err)
 		return
 	}
@@ -246,6 +301,12 @@ func (c *Controller) GetBookings(ctx *gin.Context) {
 }
 
 func (c *Controller) GetUserByID(ctx *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logrus.Info("GetUserByID@panicInfo:", r)
+			utils.InternalServerErrorResponse(ctx, fmt.Errorf("%v", r))
+		}
+	}()
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		utils.ValidationError(ctx, err)

@@ -1,9 +1,13 @@
 package service
 
 import (
+	"movie_ticket/dto"
 	"movie_ticket/model"
 	"movie_ticket/repository"
 	"movie_ticket/utils"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -17,7 +21,7 @@ func NewService(repo repository.Repository) *Service {
 func (s *Service) RegisterUser(userName, password, email string) (*model.User, error) {
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
-		utils.Logger.Printf("Password hashing failed: %v", err)
+		logrus.Info("Password hashing failed: %v", err)
 		return nil, err
 	}
 
@@ -28,7 +32,7 @@ func (s *Service) RegisterUser(userName, password, email string) (*model.User, e
 	}
 
 	if err := s.repo.CreateUser(user); err != nil {
-		utils.Logger.Printf(" failed to Create user: %v", err)
+		logrus.Info(" failed to Create user: %v", err)
 		return nil, err
 	}
 	return user, nil
@@ -37,29 +41,41 @@ func (s *Service) RegisterUser(userName, password, email string) (*model.User, e
 func (s *Service) Authenticate(userName, password string) (*model.User, error) {
 	user, err := s.repo.GetUserByUserName(userName)
 	if err != nil {
-		utils.Logger.Printf("User not found: %s", userName)
+		logrus.Info("User not found: %s", userName)
 		return nil, err
 	}
 
 	if err := utils.CheckPasswordHash(password, user.Password); err != nil {
-		utils.Logger.Printf("Invalid password for user: %s", userName)
+		logrus.Info("Invalid password for user: %s", userName)
 		return nil, err
 	}
 
 	return user, nil
 }
 
-func (s *Service) CreateTicket(ticket *model.TicketMaster) error {
-	if ticket.AvailableTicket == 0 {
-		ticket.AvailableTicket = ticket.TotalTicket
+func (s *Service) ListUsers() ([]model.User, error) {
+	users, err := s.repo.ListUsers()
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (s *Service) CreateMoviesTicket(req dto.TicketRequest) (*model.TicketMaster, error) {
+
+	ticket := &model.TicketMaster{
+		MovieName:       req.MovieName,
+		TotalTicket:     req.TotalTicket,
+		AvailableTicket: req.TotalTicket,
+		PricePerTicket:  req.PricePerTicket,
 	}
 
-	if err := s.repo.CreateTicket(ticket); err != nil {
-		utils.Logger.Printf("Create ticket failed: %v", err)
-		return err
+	if err := s.repo.CreateMoviesTicket(ticket); err != nil {
+		logrus.Info("CreateMoviesTicket failed. Error=%v", err)
+		return nil, err
 	}
 
-	return nil
+	return ticket, nil
 }
 
 func (s *Service) GetAllTickets() ([]model.TicketMaster, error) {
@@ -79,18 +95,24 @@ func (s *Service) GetTicketByID(id uint) (*model.TicketMaster, error) {
 
 	return ticket, nil
 }
+func (s *Service) UpdateTicket(id uint, req dto.TicketRequest) error {
 
-func (s *Service) UpdateTicket(ticket *model.TicketMaster) error {
-	if err := s.repo.UpdateTicket(ticket); err != nil {
-		return err
+	ticket := &model.TicketMaster{
+		Model: gorm.Model{
+			ID: id,
+		},
+		MovieName:       req.MovieName,
+		TotalTicket:     req.TotalTicket,
+		AvailableTicket: req.TotalTicket,
+		PricePerTicket:  req.PricePerTicket,
 	}
 
-	return nil
+	return s.repo.UpdateTicket(ticket)
 }
 
 func (s *Service) BookTicket(ticketID, userID uint, quantity int) error {
 	if err := s.repo.BookTicket(ticketID, userID, quantity); err != nil {
-		utils.Logger.Printf("Book ticket failed. Ticket=%d User=%d Error=%v",ticketID, userID, err)
+		logrus.Info("Book ticket failed. Ticket=%d User=%d Error=%v", ticketID, userID, err)
 		return err
 	}
 
